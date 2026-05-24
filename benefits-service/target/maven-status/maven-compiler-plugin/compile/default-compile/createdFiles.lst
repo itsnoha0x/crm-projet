@@ -1,0 +1,8 @@
+com\crm\benefits\entity\Benefit.class
+com\crm\benefits\repository\BenefitRepository.class
+com\crm\benefits\BenefitsServiceApplication.class
+com\crm\benefits\controller\BenefitController.class
+com\crm\benefits\dto\BenefitResponse.class
+com\crm\benefits\entity\Benefit$BenefitBuilder.class
+com\crm\benefits\service\BenefitServiceImpl.class
+com\crm\benefits\dto\BenefitResponse$BenefitResponseBuilder.class
