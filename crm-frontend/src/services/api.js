@@ -39,6 +39,8 @@ export const customerAPI = {
     api.get('/api/customers', { params: { size: 100 } })
        .then(res => ({ data: res.data.content ?? res.data })),
   getById: (id) => api.get(`/api/customers/${id}`),
+  search: (q, options = {}) =>
+    api.get('/api/customers/search', { params: { q, size: options.size || 10 } }),
   create: (data) => api.post('/api/customers', data),
   update: (id, data) => api.put(`/api/customers/${id}`, data),
   delete: (id) => api.delete(`/api/customers/${id}`),

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import keycloak from '../keycloak';
+import { customerAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -8,6 +9,7 @@ let initialized = false;
 export function AuthProvider({ children }) {
   const [authenticated, setAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [customer, setCustomer] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,15 +22,28 @@ export function AuthProvider({ children }) {
         checkLoginIframe: false,
         pkceMethod: 'S256',
       })
-      .then((auth) => {
+      .then(async (auth) => {
         if (auth) {
           localStorage.setItem('kc_token', keycloak.token);
           setAuthenticated(true);
-          setUser({
+          const currentUser = {
             username: keycloak.tokenParsed?.preferred_username,
             email: keycloak.tokenParsed?.email,
             roles: keycloak.tokenParsed?.realm_access?.roles ?? [],
-          });
+          };
+          setUser(currentUser);
+
+          // If user is a USER, fetch their customer account
+          if (currentUser.roles.includes('USER')) {
+            try {
+              const { data } = await customerAPI.search(currentUser.email, { size: 1 });
+              if (data?.content?.length > 0) {
+                setCustomer(data.content[0]);
+              }
+            } catch (err) {
+              console.error('Failed to fetch customer account:', err);
+            }
+          }
 
           keycloak.onTokenExpired = () => {
             keycloak.updateToken(60).then((refreshed) => {
@@ -77,7 +92,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ authenticated, user, logout, keycloak, hasRole }}>
+    <AuthContext.Provider value={{ authenticated, user, customer, logout, keycloak, hasRole }}>
       {children}
     </AuthContext.Provider>
   );
