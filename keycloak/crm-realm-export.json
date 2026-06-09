@@ -9,15 +9,15 @@
   "roles": {
     "realm": [
       {
-        "name": "ROLE_ADMIN",
+        "name": "ADMIN",
         "description": "Administrateur hotel, acces total"
       },
       {
-        "name": "ROLE_USER",
+        "name": "USER",
         "description": "Client fidelite, acces lecture de son profil"
       },
       {
-        "name": "ROLE_STAFF",
+        "name": "STAFF",
         "description": "Personnel hotel, peut creer des reservations"
       }
     ]
@@ -38,22 +38,6 @@
       "webOrigins": [
         "http://localhost:3000",
         "http://localhost:5173"
-      ],
-      "protocolMappers": [
-        {
-          "name": "roles",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-realm-role-mapper",
-          "consentRequired": false,
-          "config": {
-            "multivalued": "true",
-            "userinfo.token.claim": "false",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "claim.name": "roles",
-            "jsonType.label": "String"
-          }
-        }
       ]
     },
     {
@@ -65,23 +49,7 @@
       "secret": "crm-backend-secret",
       "serviceAccountsEnabled": true,
       "standardFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
-      "protocolMappers": [
-        {
-          "name": "roles",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-realm-role-mapper",
-          "consentRequired": false,
-          "config": {
-            "multivalued": "true",
-            "userinfo.token.claim": "false",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "claim.name": "roles",
-            "jsonType.label": "String"
-          }
-        }
-      ]
+      "directAccessGrantsEnabled": true
     }
   ],
   "users": [
@@ -100,7 +68,7 @@
         }
       ],
       "realmRoles": [
-        "ROLE_ADMIN"
+        "ADMIN"
       ]
     },
     {
@@ -118,7 +86,7 @@
         }
       ],
       "realmRoles": [
-        "ROLE_USER"
+        "USER"
       ]
     },
     {
@@ -136,7 +104,7 @@
         }
       ],
       "realmRoles": [
-        "ROLE_STAFF"
+        "STAFF"
       ]
     }
   ]

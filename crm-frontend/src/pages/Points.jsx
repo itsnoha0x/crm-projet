@@ -1,22 +1,245 @@
-// Page Gestion des Points - Consultation et transactions
+// Points.jsx — L'Éclat d'Azur CRM · Luxury Dark Edition
+// ENHANCED with analytics and better organization
 import React, { useState, useMemo, useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { customerAPI, loyaltyAPI, pointsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-// Badge de type de transaction
+/* ─── Palette ──────────────────────────────────────────────── */
+const C = {
+  bg:       '#100B06',
+  bgLayer:  '#180E08',
+  bgCard:   '#1F1209',
+  bgCardHov:'#251608',
+  bgPanel:  '#1A0F08',
+  border:   'rgba(184,137,42,0.18)',
+  borderHov:'rgba(184,137,42,0.42)',
+  borderSub:'rgba(184,137,42,0.10)',
+  gold:     '#C49A2E',
+  goldBrt:  '#DDB84F',
+  goldLight:'#EDD080',
+  goldPale: '#F5E8B4',
+  goldGlow: 'rgba(196,154,46,0.25)',
+  goldMuted:'rgba(196,154,46,0.12)',
+  textPrim: '#F0E6D0',
+  textSec:  '#B09070',
+  textMut:  'rgba(176,144,112,0.55)',
+  textDim:  'rgba(176,144,112,0.32)',
+  silver:   '#8E9BAA',
+  platinum: '#9F94D8',
+  green:    '#4ade80',
+  red:      '#E74C3C',
+  onyx:     '#0A0604',
+};
+
+const STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Jost:wght@200;300;400;500&display=swap');
+
+  .ezp * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(26px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes lineDraw {
+    from { transform: scaleX(0); opacity: 0; }
+    to   { transform: scaleX(1); opacity: 1; }
+  }
+  @keyframes shimmerLoad {
+    0%,100% { opacity:.08; } 50% { opacity:.22; }
+  }
+
+  .ezp-panel {
+    background: #1A0F08;
+    border: 1px solid rgba(196,154,46,0.14);
+    border-radius: 2px;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ezp-stat {
+    background: #1F1209;
+    border: 1px solid rgba(196,154,42,0.16);
+    border-radius: 2px;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  .ezp-stat:hover {
+    transform: translateY(-5px);
+    background: #251608;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(196,154,46,0.12);
+  }
+
+  .ezp-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(196,154,46,0.06);
+    border: 1px solid rgba(196,154,46,0.3);
+    border-radius: 2px;
+    padding: 9px 16px 9px 34px;
+    color: #F0E6D0;
+    font-family: 'Jost', sans-serif;
+    font-size: 13px;
+    font-weight: 300;
+    outline: none;
+    transition: all 0.2s ease;
+  }
+  .ezp-input:focus {
+    border-color: rgba(196,154,46,0.6);
+    background: rgba(196,154,46,0.08);
+  }
+
+  .ezp-button {
+    padding: 10px 14px;
+    border-radius: 2px;
+    border: 1px solid currentColor;
+    background: transparent;
+    color: inherit;
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+  }
+  .ezp-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .ezp-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: #1A0F08;
+    border: 1px solid rgba(196,154,42,0.25);
+    border-radius: 2px;
+    overflow: hidden;
+    z-index: 20;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  }
+
+  .ezp-dropdown-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(196,154,46,0.08);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.12s ease;
+  }
+  .ezp-dropdown-item:hover {
+    background: rgba(196,154,46,0.08);
+  }
+
+  .ezp-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 2px;
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .ezp-badge.earned {
+    background: rgba(74,222,128,0.12);
+    border: 1px solid rgba(74,222,128,0.3);
+    color: #4ade80;
+  }
+  .ezp-badge.redeemed {
+    background: rgba(231,76,60,0.12);
+    border: 1px solid rgba(231,76,60,0.3);
+    color: #E74C3C;
+  }
+
+  .ezp-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .ezp-table thead tr {
+    background: rgba(10,6,4,0.4);
+    border-bottom: 1px solid rgba(196,154,46,0.2);
+  }
+  .ezp-table thead th {
+    padding: 12px 20px;
+    text-align: left;
+    font-family: 'Jost', sans-serif;
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(176,144,112,0.65);
+  }
+  .ezp-table tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.18s ease;
+  }
+  .ezp-table tbody tr:hover {
+    background: rgba(196,154,46,0.04);
+  }
+  .ezp-table tbody td {
+    padding: 12px 20px;
+    font-family: 'Jost', sans-serif;
+    font-size: 12px;
+    font-weight: 300;
+    color: #B09070;
+  }
+
+  .ezp-shimmer { animation: shimmerLoad 2s ease infinite; }
+
+  @media (max-width: 900px) {
+    .ezp-grid2 { grid-template-columns: 1fr !important; }
+  }
+`;
+
+/* ─── Typography ─────────────────────────────────────────────── */
+const serif  = (sz, wt=400, col=C.textPrim, x={}) => ({ fontFamily:"'Cormorant Garamond',Georgia,serif", fontSize:sz, fontWeight:wt, color:col, ...x });
+const jost   = (sz, wt=300, col=C.textSec,  x={}) => ({ fontFamily:"'Jost',sans-serif", fontSize:sz, fontWeight:wt, letterSpacing:'0.2em', textTransform:'uppercase', color:col, ...x });
+
+/* ─── Atoms ──────────────────────────────────────────────────── */
+function Label({ children, color=C.textSec, style={} }) {
+  return <p style={{ ...jost(9, 300, color), margin:0, ...style }}>{children}</p>;
+}
+
+function GoldDivider({ label }) {
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:16, margin:'3.2rem 0 2rem' }}>
+      <div style={{ flex:1, height:'0.5px', background:`linear-gradient(to right, transparent, rgba(196,154,46,0.4))`, animation:'lineDraw .9s ease both' }} />
+      <span style={{ color:C.gold, fontSize:9, opacity:.6 }}>✦</span>
+      {label && <Label color={C.gold} style={{ letterSpacing:'0.32em' }}>{label}</Label>}
+      <span style={{ color:C.gold, fontSize:9, opacity:.6 }}>✦</span>
+      <div style={{ flex:1, height:'0.5px', background:`linear-gradient(to left, transparent, rgba(196,154,46,0.4))`, animation:'lineDraw .9s ease both' }} />
+    </div>
+  );
+}
+
 function TxBadge({ type }) {
   const isEarned = type === 'EARNED' || type === 'BONUS' || type === 'ADJUSTMENT';
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold
-      ${isEarned ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/15 text-red-400 border border-red-500/30'}`}
-    >
-      <span>{isEarned ? '▲' : '▼'}</span>
-      {isEarned ? 'Gagné' : 'Utilisé'}
+    <span className={`ezp-badge ${isEarned ? 'earned' : 'redeemed'}`}>
+      {isEarned ? '▲' : '▼'} {isEarned ? 'Earned' : 'Redeemed'}
     </span>
   );
 }
 
-// Formulaire de gain de points
 function EarnForm({ customerId, card, onSuccess, addToast }) {
   const [form, setForm] = useState({ points: '', reference: '', description: '' });
   const [loading, setLoading] = useState(false);
@@ -24,9 +247,8 @@ function EarnForm({ customerId, card, onSuccess, addToast }) {
 
   function validate() {
     const e = {};
-    if (!form.points || isNaN(form.points) || Number(form.points) <= 0)
-      e.points = 'Entrez un nombre de points valide';
-    if (!form.reference.trim()) e.reference = 'Référence obligatoire';
+    if (!form.points || isNaN(form.points) || Number(form.points) <= 0) e.points = 'Enter a valid number';
+    if (!form.reference.trim()) e.reference = 'Reference is required';
     return e;
   }
 
@@ -35,79 +257,43 @@ function EarnForm({ customerId, card, onSuccess, addToast }) {
     if (Object.keys(e).length) { setErrors(e); return; }
     setLoading(true);
     try {
-      await pointsAPI.earn({
-        customerId,
-        loyaltyCardId: card.id,
-        points: Number(form.points),
-        reference: form.reference,
-        description: form.description,
-      });
+      await pointsAPI.earn({ customerId, loyaltyCardId: card.id, points: Number(form.points), reference: form.reference, description: form.description });
       setForm({ points: '', reference: '', description: '' });
       setErrors({});
       onSuccess();
-      addToast?.(`${form.points} points ajoutés`, 'success');
+      addToast?.(`${form.points} reward points credited`, 'success');
     } catch (err) {
-      addToast?.(err.userMessage || 'Erreur lors de l\'ajout de points', 'error');
-    } finally {
-      setLoading(false);
-    }
+      addToast?.(err.userMessage || 'Error', 'error');
+    } finally { setLoading(false); }
   }
 
   return (
-    <div className="bg-slate-900 border border-emerald-500/20 rounded-2xl p-5">
-      <h3 className="text-emerald-400 font-semibold text-sm mb-4 flex items-center gap-2">
-        <span>▲</span> Ajouter des points
-      </h3>
-      <div className="space-y-3">
+    <div className="ezp-panel" style={{ borderTop:`2px solid ${C.green}` }}>
+      <Label color={C.gold} style={{ marginBottom:12 }}>Credit Points</Label>
+      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
         <div>
-          <label className="text-slate-500 text-xs mb-1.5 block">Points *</label>
-          <input
-            type="number"
-            value={form.points}
-            onChange={(e) => setForm((f) => ({ ...f, points: e.target.value }))}
-            placeholder="100"
-            min="1"
-            className={`w-full bg-slate-800 border rounded-lg px-3 py-2.5 text-white text-sm outline-none focus:ring-2 transition-all
-              ${errors.points ? 'border-red-500 focus:ring-red-500/20' : 'border-slate-700 focus:border-emerald-500 focus:ring-emerald-500/20'}`}
-          />
-          {errors.points && <p className="text-red-400 text-xs mt-1">{errors.points}</p>}
+          <Label style={{ marginBottom:6 }}>Points</Label>
+          <input type="number" value={form.points} onChange={e => setForm(f => ({ ...f, points: e.target.value }))} placeholder="100" className="ezp-input" />
+          {errors.points && <p style={{ ...jost(9, 300, '#E74C3C'), marginTop:4 }}>{errors.points}</p>}
         </div>
         <div>
-          <label className="text-slate-500 text-xs mb-1.5 block">Référence *</label>
-          <input
-            type="text"
-            value={form.reference}
-            onChange={(e) => setForm((f) => ({ ...f, reference: e.target.value }))}
-            placeholder="ACHAT-2024-001"
-            className={`w-full bg-slate-800 border rounded-lg px-3 py-2.5 text-white text-sm outline-none focus:ring-2 transition-all
-              ${errors.reference ? 'border-red-500 focus:ring-red-500/20' : 'border-slate-700 focus:border-emerald-500 focus:ring-emerald-500/20'}`}
-          />
-          {errors.reference && <p className="text-red-400 text-xs mt-1">{errors.reference}</p>}
+          <Label style={{ marginBottom:6 }}>Reference</Label>
+          <input type="text" value={form.reference} onChange={e => setForm(f => ({ ...f, reference: e.target.value }))} placeholder="STAY-2024-001" className="ezp-input" />
+          {errors.reference && <p style={{ ...jost(9, 300, '#E74C3C'), marginTop:4 }}>{errors.reference}</p>}
         </div>
         <div>
-          <label className="text-slate-500 text-xs mb-1.5 block">Description</label>
-          <input
-            type="text"
-            value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            placeholder="Achat en boutique..."
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-white text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-          />
+          <Label style={{ marginBottom:6 }}>Description</Label>
+          <input type="text" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Reason..." className="ezp-input" />
         </div>
-        <button
-          onClick={handleSubmit}
-          disabled={loading}
-          className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {loading && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-          Ajouter les points
+        <button onClick={handleSubmit} disabled={loading} className="ezp-button" style={{ color:C.green, borderColor:C.green }}>
+          {loading && <span style={{ width:14, height:14, borderRadius:'50%', border:`2px solid ${C.green}`, borderTopColor:'transparent', animation:'spin .8s linear infinite' }} />}
+          ▲ Credit
         </button>
       </div>
     </div>
   );
 }
 
-// Formulaire de remboursement de points
 function RedeemForm({ customerId, card, currentBalance, onSuccess, addToast }) {
   const [form, setForm] = useState({ points: '', description: '' });
   const [loading, setLoading] = useState(false);
@@ -116,8 +302,8 @@ function RedeemForm({ customerId, card, currentBalance, onSuccess, addToast }) {
   function validate() {
     const e = {};
     const pts = Number(form.points);
-    if (!form.points || isNaN(pts) || pts <= 0) e.points = 'Entrez un nombre de points valide';
-    else if (pts > currentBalance) e.points = `Solde insuffisant (max: ${currentBalance})`;
+    if (!form.points || isNaN(pts) || pts <= 0) e.points = 'Invalid amount';
+    else if (pts > currentBalance) e.points = `Insufficient (max: ${currentBalance})`;
     return e;
   }
 
@@ -126,67 +312,39 @@ function RedeemForm({ customerId, card, currentBalance, onSuccess, addToast }) {
     if (Object.keys(e).length) { setErrors(e); return; }
     setLoading(true);
     try {
-      await pointsAPI.redeem({
-        customerId,
-        loyaltyCardId: card.id,
-        points: Number(form.points),
-        reference: `REDEEM-${Date.now()}`,
-        description: form.description,
-      });
+      await pointsAPI.redeem({ customerId, loyaltyCardId: card.id, points: Number(form.points), reference: `REDEEM-${Date.now()}`, description: form.description });
       setForm({ points: '', description: '' });
       setErrors({});
       onSuccess();
-      addToast?.(`${form.points} points utilisés`, 'success');
+      addToast?.(`${form.points} points redeemed`, 'success');
     } catch (err) {
-      addToast?.(err.userMessage || 'Erreur lors de l\'utilisation de points', 'error');
-    } finally {
-      setLoading(false);
-    }
+      addToast?.(err.userMessage || 'Error', 'error');
+    } finally { setLoading(false); }
   }
 
   return (
-    <div className="bg-slate-900 border border-red-500/20 rounded-2xl p-5">
-      <h3 className="text-red-400 font-semibold text-sm mb-4 flex items-center gap-2">
-        <span>▼</span> Utiliser des points
-      </h3>
-      <div className="space-y-3">
+    <div className="ezp-panel" style={{ borderTop:`2px solid ${C.red}` }}>
+      <Label color={C.gold} style={{ marginBottom:12 }}>Redeem Points</Label>
+      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
         <div>
-          <label className="text-slate-500 text-xs mb-1.5 block">Points à utiliser *</label>
-          <input
-            type="number"
-            value={form.points}
-            onChange={(e) => setForm((f) => ({ ...f, points: e.target.value }))}
-            placeholder="50"
-            min="1"
-            max={currentBalance}
-            className={`w-full bg-slate-800 border rounded-lg px-3 py-2.5 text-white text-sm outline-none focus:ring-2 transition-all
-              ${errors.points ? 'border-red-500 focus:ring-red-500/20' : 'border-slate-700 focus:border-red-500 focus:ring-red-500/20'}`}
-          />
-          {errors.points && <p className="text-red-400 text-xs mt-1">{errors.points}</p>}
+          <Label style={{ marginBottom:6 }}>Points</Label>
+          <input type="number" value={form.points} onChange={e => setForm(f => ({ ...f, points: e.target.value }))} placeholder="50" max={currentBalance} className="ezp-input" />
+          {errors.points && <p style={{ ...jost(9, 300, '#E74C3C'), marginTop:4 }}>{errors.points}</p>}
         </div>
         <div>
-          <label className="text-slate-500 text-xs mb-1.5 block">Description</label>
-          <input
-            type="text"
-            value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            placeholder="Remise sur achat..."
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-white text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
-          />
+          <Label style={{ marginBottom:6 }}>Description</Label>
+          <input type="text" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Reward..." className="ezp-input" />
         </div>
-        <button
-          onClick={handleSubmit}
-          disabled={loading || currentBalance === 0}
-          className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-medium text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {loading && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-          Utiliser les points
+        <button onClick={handleSubmit} disabled={loading || currentBalance === 0} className="ezp-button" style={{ color:C.red, borderColor:C.red }}>
+          {loading && <span style={{ width:14, height:14, borderRadius:'50%', border:`2px solid ${C.red}`, borderTopColor:'transparent', animation:'spin .8s linear infinite' }} />}
+          ▼ Redeem
         </button>
       </div>
     </div>
   );
 }
 
+/* ─── Main Points Component ─────────────────────────────────────────────– */
 export default function Points({ addToast }) {
   const { authenticated } = useAuth();
   const [search, setSearch] = useState('');
@@ -199,25 +357,19 @@ export default function Points({ addToast }) {
 
   useEffect(() => {
     if (!authenticated) return;
-    customerAPI.getAll().then((res) => setAllCustomers(res.data)).catch(() => {});
+    customerAPI.getAll().then(res => setAllCustomers(res.data)).catch(() => {});
   }, [authenticated]);
 
-  // Recherche filtrée
   const filtered = useMemo(() => {
     if (!search.trim()) return [];
     const q = search.toLowerCase();
-    return allCustomers
-      .filter((c) =>
-        `${c.firstName} ${c.lastName}`.toLowerCase().includes(q) ||
-        c.email?.toLowerCase().includes(q)
-      )
-      .slice(0, 6);
+    return allCustomers.filter(c =>
+      `${c.firstName} ${c.lastName}`.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q)
+    ).slice(0, 6);
   }, [search, allCustomers]);
 
   async function selectCustomer(customer) {
-    setSelectedCustomer(customer);
-    setSearch('');
-    setLoading(true);
+    setSelectedCustomer(customer); setSearch(''); setLoading(true);
     try {
       const [cardRes, balRes, histRes] = await Promise.allSettled([
         loyaltyAPI.getCardByCustomer(customer.id),
@@ -227,76 +379,65 @@ export default function Points({ addToast }) {
       setCard(cardRes.status === 'fulfilled' ? cardRes.value.data : null);
       setBalance(balRes.status === 'fulfilled' ? balRes.value.data?.currentBalance || 0 : 0);
       setHistory(histRes.status === 'fulfilled' ? histRes.value.data : []);
-    } catch {
-      addToast?.('Erreur lors du chargement', 'error');
-    } finally {
-      setLoading(false);
-    }
+    } catch { addToast?.('Error loading data', 'error'); }
+    finally { setLoading(false); }
   }
 
   async function refreshData() {
     if (!selectedCustomer) return;
     try {
-      const [balRes, histRes] = await Promise.all([
-        pointsAPI.getBalance(selectedCustomer.id),
-        pointsAPI.getHistory(selectedCustomer.id),
-      ]);
+      const [balRes, histRes] = await Promise.all([pointsAPI.getBalance(selectedCustomer.id), pointsAPI.getHistory(selectedCustomer.id)]);
       setBalance(balRes.data?.currentBalance || 0);
       setHistory(histRes.data || []);
     } catch {}
   }
 
-  // Calcul du solde courant par transaction
   const historyWithBalance = useMemo(() => {
     let running = balance;
-    return history.map((tx) => {
-      const current = running;
-      running -= tx.points || 0;
-      return { ...tx, runningBalance: current };
-    });
+    return history.map(tx => { const current = running; running -= tx.points || 0; return { ...tx, runningBalance: current }; });
   }, [history, balance]);
 
-  const CARD_TYPE_LABELS = { SILVER: '◈ Silver', GOLD: '◆ Gold', PLATINUM: '★ Platinum' };
+  // Points Analytics
+  const pointsAnalytics = useMemo(() => {
+    const earned = historyWithBalance.filter(tx => tx.transactionType === 'EARNED' || tx.transactionType === 'BONUS' || tx.transactionType === 'ADJUSTMENT').reduce((sum, tx) => sum + (tx.points || 0), 0);
+    const redeemed = historyWithBalance.filter(tx => tx.transactionType === 'REDEEMED').reduce((sum, tx) => sum + (tx.points || 0), 0);
+    return { earned, redeemed };
+  }, [historyWithBalance]);
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      {/* En-tête */}
-      <div className="bg-slate-900 border-b border-slate-800 px-6 py-6">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-white text-2xl font-bold">Gestion des Points</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Consultation du solde et enregistrement des transactions</p>
-        </div>
-      </div>
+    <div className="ezp" style={{ minHeight:'100vh', background:C.bg, color:C.textPrim }}>
+      <style>{STYLES}</style>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Recherche client */}
-        <div className="max-w-lg mb-8 relative">
-          <label className="text-slate-400 text-sm font-medium mb-2 block">Rechercher un client</label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">⌕</span>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Nom ou email du client..."
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder-slate-600 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-            />
+      {/* ══ HEADER ══ */}
+      <header style={{ background:C.bgLayer, borderBottom:`1px solid ${C.border}`, padding:'2rem 2.5rem', position:'relative', overflow:'hidden' }}>
+        <div style={{ position:'absolute', inset:0, opacity:0.015, backgroundImage:'repeating-linear-gradient(45deg,#C49A2E 0,#C49A2E 1px,transparent 0,transparent 50%)', backgroundSize:'20px 20px' }} />
+        <div style={{ position:'relative', maxWidth:1240, margin:'0 auto' }}>
+          <Label color={C.gold} style={{ marginBottom:8 }}>LuxStay Rewards</Label>
+          <h1 style={{ ...serif(32, 400, '#FFFFFF'), marginBottom:6 }}>Reward Points</h1>
+          <p style={{ ...jost(11, 200, C.textMut), margin:0 }}>Manage guest points — credit stays, redeem privileges</p>
+        </div>
+      </header>
+
+      {/* ══ MAIN ══ */}
+      <main style={{ maxWidth:1240, margin:'0 auto', padding:'2rem 2.5rem' }}>
+
+        {/* ── Guest Search ── */}
+        <div style={{ maxWidth:520, marginBottom:32, position:'relative' }}>
+          <Label style={{ marginBottom:8 }}>Search Guest</Label>
+          <div style={{ position:'relative' }}>
+            <span style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', color:C.gold, fontSize:14, opacity:0.5 }}>⌕</span>
+            <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Guest name or email..." className="ezp-input" />
           </div>
-          {/* Dropdown de résultats */}
           {filtered.length > 0 && (
-            <div className="absolute z-20 w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
-              {filtered.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => selectCustomer(c)}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-800 transition-colors text-left"
-                >
-                  <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 text-xs font-bold flex-shrink-0">
+            <div className="ezp-dropdown">
+              {filtered.map(c => (
+                <button key={c.id} className="ezp-dropdown-item" onClick={() => selectCustomer(c)}>
+                  <div style={{ width:32, height:32, borderRadius:2, background:`${C.gold}12`, color:C.gold, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:400 }}>
                     {c.firstName?.[0]}{c.lastName?.[0]}
                   </div>
                   <div>
-                    <p className="text-white text-sm font-medium">{c.firstName} {c.lastName}</p>
-                    <p className="text-slate-500 text-xs">{c.email}</p>
+                    <p style={{ ...serif(14, 400, C.textPrim), marginBottom:2 }}>{c.firstName} {c.lastName}</p>
+                    <p style={{ ...jost(10, 200, C.textMut), margin:0 }}>{c.email}</p>
                   </div>
                 </button>
               ))}
@@ -304,98 +445,105 @@ export default function Points({ addToast }) {
           )}
         </div>
 
-        {/* Contenu selon l'état */}
         {!selectedCustomer ? (
-          <div className="text-center py-24 text-slate-600">
-            <div className="text-5xl mb-3">◇</div>
-            <p className="text-slate-500 font-medium">Recherchez un client pour gérer ses points</p>
+          <div style={{ textAlign:'center', padding:'5rem 0', color:C.textMut, opacity:0.5 }}>
+            <p style={{ fontSize:36, margin:'0 0 12px' }}>◇</p>
+            <p style={{ ...jost(14, 300, C.textMut) }}>Search a guest to manage their reward points</p>
           </div>
         ) : loading ? (
-          <div className="flex items-center justify-center py-24">
-            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <div style={{ display:'flex', justifyContent:'center', padding:'5rem 0' }}>
+            <div style={{ width:28, height:28, borderRadius:'50%', border:`2px solid ${C.gold}`, borderTopColor:'transparent', animation:'spin .8s linear infinite' }} />
           </div>
         ) : (
-          <div className="space-y-6">
-            {/* Info client + solde */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500/30 to-violet-500/30 border border-blue-500/20 flex items-center justify-center text-white text-xl font-bold">
+          <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+
+            {/* ── Guest Info + Balance ── */}
+            <div className="ezp-panel">
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:16 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+                  <div style={{ width:52, height:52, borderRadius:2, background:`${C.gold}12`, color:C.gold, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, fontWeight:400, border:`1px solid ${C.gold}30` }}>
                     {selectedCustomer.firstName?.[0]}{selectedCustomer.lastName?.[0]}
                   </div>
                   <div>
-                    <h2 className="text-white font-semibold text-xl">
+                    <h2 style={{ ...serif(22, 400, C.textPrim), marginBottom:3 }}>
                       {selectedCustomer.firstName} {selectedCustomer.lastName}
                     </h2>
-                    <p className="text-slate-500 text-sm">{selectedCustomer.email}</p>
-                    {card && (
-                      <span className="text-xs text-slate-500 mt-1 inline-block">
-                        Carte {CARD_TYPE_LABELS[card.cardType] || card.cardType}
-                      </span>
-                    )}
+                    <p style={{ ...jost(12, 200, C.textMut), marginBottom:4 }}>{selectedCustomer.email}</p>
+                    {card && <Label color={C.gold}>{card.cardType} Membership</Label>}
                   </div>
                 </div>
-                <div className="text-center sm:text-right">
-                  <p className="text-slate-500 text-sm mb-1">Solde actuel</p>
-                  <p className="text-5xl font-bold text-white tracking-tight">
-                    {balance.toLocaleString('fr-FR')}
+                <div style={{ textAlign:'right' }}>
+                  <Label color={C.textMut} style={{ marginBottom:4 }}>Current Balance</Label>
+                  <p style={{ ...serif(42, 300, C.textPrim), margin:'0 0 4px', lineHeight:1 }}>
+                    {balance.toLocaleString('en-US')}
                   </p>
-                  <p className="text-slate-500 text-sm">points</p>
+                  <p style={{ ...jost(11, 200, C.textMut), margin:0 }}>reward points</p>
                 </div>
               </div>
             </div>
 
+            {/* ── Points Analytics ── */}
+            {card && (
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:14 }}>
+                <div className="ezp-stat" style={{ borderTop:`2px solid ${C.green}` }}>
+                  <Label color={C.green} style={{ marginBottom:12 }}>Total Earned</Label>
+                  <p style={{ ...serif(32, 300, C.textPrim), margin:0 }}>{pointsAnalytics.earned.toLocaleString('en-US')}</p>
+                </div>
+                <div className="ezp-stat" style={{ borderTop:`2px solid ${C.red}` }}>
+                  <Label color={C.red} style={{ marginBottom:12 }}>Total Redeemed</Label>
+                  <p style={{ ...serif(32, 300, C.textPrim), margin:0 }}>{pointsAnalytics.redeemed.toLocaleString('en-US')}</p>
+                </div>
+                <div className="ezp-stat">
+                  <Label style={{ marginBottom:12 }}>Transactions</Label>
+                  <p style={{ ...serif(32, 300, C.textPrim), margin:0 }}>{history.length}</p>
+                </div>
+              </div>
+            )}
+
             {!card ? (
-              <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-6 text-center">
-                <p className="text-amber-400 font-medium">Ce client n'a pas encore de carte de fidélité</p>
-                <p className="text-slate-500 text-sm mt-1">Créez d'abord une carte depuis la page "Cartes Fidélité"</p>
+              <div className="ezp-panel" style={{ background:`rgba(196,154,46,0.08)`, textAlign:'center' }}>
+                <p style={{ ...serif(15, 400, C.gold), marginBottom:6 }}>No membership card found</p>
+                <p style={{ ...jost(12, 200, C.textMut), margin:0 }}>Issue a card first from the Loyalty Cards page</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
                 <EarnForm customerId={selectedCustomer.id} card={card} onSuccess={refreshData} addToast={addToast} />
                 <RedeemForm customerId={selectedCustomer.id} card={card} currentBalance={balance} onSuccess={refreshData} addToast={addToast} />
               </div>
             )}
 
-            {/* Historique des transactions */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-              <div className="px-6 py-5 border-b border-slate-800">
-                <h3 className="text-white font-semibold">Historique des transactions</h3>
-              </div>
+            {/* ── Transaction History ── */}
+            <div className="ezp-panel">
+              <Label color={C.gold} style={{ marginBottom:12 }}>Transaction History</Label>
               {historyWithBalance.length === 0 ? (
-                <div className="text-center py-16 text-slate-600">
-                  <p>Aucune transaction enregistrée</p>
-                </div>
+                <p style={{ textAlign:'center', color:C.textMut, fontSize:13, padding:'3rem 0', opacity:0.5 }}>
+                  No transactions recorded
+                </p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
+                <div style={{ overflowX:'auto' }}>
+                  <table className="ezp-table">
                     <thead>
-                      <tr className="border-b border-slate-800">
-                        {['Date', 'Type', 'Points', 'Référence', 'Description', 'Solde'].map((h) => (
-                          <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                            {h}
-                          </th>
+                      <tr>
+                        {['Date', 'Type', 'Points', 'Reference', 'Description', 'Balance'].map(h => (
+                          <th key={h}>{h}</th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/60">
+                    <tbody>
                       {historyWithBalance.map((tx, i) => {
-                        const txType = tx.transactionType;
-                        const isEarned = txType === 'EARNED' || txType === 'BONUS' || txType === 'ADJUSTMENT';
+                        const isEarned = tx.transactionType === 'EARNED' || tx.transactionType === 'BONUS' || tx.transactionType === 'ADJUSTMENT';
                         return (
-                          <tr key={tx.id || i} className="hover:bg-slate-800/30 transition-colors">
-                            <td className="px-6 py-4 text-slate-400 text-sm whitespace-nowrap">
-                              {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString('fr-FR') : '—'}
+                          <tr key={tx.id || i}>
+                            <td style={{ color:C.textMut, whiteSpace:'nowrap' }}>
+                              {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString('en-GB') : '—'}
                             </td>
-                            <td className="px-6 py-4"><TxBadge type={txType} /></td>
-                            <td className={`px-6 py-4 font-bold text-sm ${isEarned ? 'text-emerald-400' : 'text-red-400'}`}>
-                              {tx.points > 0 ? '+' : ''}{tx.points?.toLocaleString('fr-FR') || 0}
+                            <td><TxBadge type={tx.transactionType} /></td>
+                            <td style={{ color:isEarned ? C.green : C.red, ...serif(14, 400) }}>
+                              {tx.points > 0 ? '+' : ''}{tx.points?.toLocaleString('en-US') || 0}
                             </td>
-                            <td className="px-6 py-4 text-slate-400 text-sm font-mono">{tx.reference || '—'}</td>
-                            <td className="px-6 py-4 text-slate-400 text-sm max-w-48 truncate">{tx.description || '—'}</td>
-                            <td className="px-6 py-4 text-white font-medium text-sm">
-                              {tx.runningBalance?.toLocaleString('fr-FR')} pts
-                            </td>
+                            <td style={{ color:C.textMut, fontSize:11, opacity:0.75 }}>{tx.reference || '—'}</td>
+                            <td style={{ color:C.textMut, opacity:0.7, maxWidth:150, overflow:'hidden', textOverflow:'ellipsis' }}>{tx.description || '—'}</td>
+                            <td style={{ color:C.textPrim, ...serif(14, 400) }}>{tx.runningBalance?.toLocaleString('en-US')} pts</td>
                           </tr>
                         );
                       })}
@@ -404,9 +552,12 @@ export default function Points({ addToast }) {
                 </div>
               )}
             </div>
+
           </div>
         )}
-      </div>
+
+      </main>
     </div>
   );
 }
+

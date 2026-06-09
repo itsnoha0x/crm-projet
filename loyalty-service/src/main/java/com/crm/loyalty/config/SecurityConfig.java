@@ -36,6 +36,7 @@ public class SecurityConfig {
                     "/v3/api-docs/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/loyalty/cards/*").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/loyalty/cards").permitAll()
                 .requestMatchers(HttpMethod.PUT, "/api/loyalty/cards/customer/*/check-upgrade").permitAll()
                 .anyRequest().authenticated()
             )

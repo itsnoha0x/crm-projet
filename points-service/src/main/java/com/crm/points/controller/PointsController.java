@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -24,6 +25,7 @@ public class PointsController {
     private final PointsService service;
 
     @PostMapping("/earn")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     public ResponseEntity<PointsResponse> earn(
             @Valid @RequestBody EarnPointsRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -31,6 +33,7 @@ public class PointsController {
     }
 
     @PostMapping("/redeem")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     public ResponseEntity<PointsResponse> redeem(
             @Valid @RequestBody RedeemPointsRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -38,12 +41,14 @@ public class PointsController {
     }
 
     @GetMapping("/{customerId}/balance")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER') or hasRole('STAFF')")
     public ResponseEntity<BalanceResponse> balance(
             @PathVariable String customerId) {
         return ResponseEntity.ok(service.getBalance(customerId));
     }
 
     @GetMapping("/{customerId}/history")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER') or hasRole('STAFF')")
     public ResponseEntity<Page<PointsResponse>> history(
             @PathVariable String customerId,
             @PageableDefault(size = 20) Pageable pageable) {
@@ -51,6 +56,7 @@ public class PointsController {
     }
 
     @PostMapping("/reservations")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     public ResponseEntity<ReservationResponse> processReservation(
             @Valid @RequestBody ReservationRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)

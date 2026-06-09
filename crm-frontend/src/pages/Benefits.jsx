@@ -1,122 +1,372 @@
-// Page Avantages - Comparaison des niveaux de fidélité
+// Benefits.jsx — L'Éclat d'Azur CRM · Luxury Dark Edition
 import React, { useState, useEffect } from 'react';
 import { benefitsAPI } from '../services/api';
 
-// Avantages par défaut pour l'affichage hors-ligne
+/* ─── Palette (identique au Dashboard) ──────────────────────────────────────────────── */
+const C = {
+  bg:       '#100B06',
+  bgLayer:  '#180E08',
+  bgCard:   '#1F1209',
+  bgCardHov:'#251608',
+  bgPanel:  '#1A0F08',
+  border:   'rgba(184,137,42,0.18)',
+  borderHov:'rgba(184,137,42,0.42)',
+  borderSub:'rgba(184,137,42,0.10)',
+  gold:     '#C49A2E',
+  goldBrt:  '#DDB84F',
+  goldLight:'#EDD080',
+  goldPale: '#F5E8B4',
+  goldGlow: 'rgba(196,154,46,0.25)',
+  goldMuted:'rgba(196,154,46,0.12)',
+  textPrim: '#F0E6D0',
+  textSec:  '#B09070',
+  textMut:  'rgba(176,144,112,0.55)',
+  textDim:  'rgba(176,144,112,0.32)',
+  silver:   '#8E9BAA',
+  platinum: '#9F94D8',
+  green:    '#4ade80',
+  onyx:     '#0A0604',
+};
+
 const DEFAULT_BENEFITS = {
   SILVER: [
-    'Accès aux offres exclusives membres',
-    'Points bonus x1 sur tous les achats',
-    'Newsletter mensuelle avec promotions',
-    'Accès à l\'espace membre en ligne',
-    'Support client prioritaire',
+    'Complimentary Welcome Amenity upon arrival',
+    'Reward Points ×1 on all stays',
+    'Room upgrade based on availability',
+    'Early check-in (subject to availability)',
+    'Dedicated member support line',
   ],
   GOLD: [
-    'Tous les avantages Silver',
-    'Points bonus x2 sur tous les achats',
-    'Livraison gratuite dès 50 MAD',
-    'Accès aux ventes privées',
-    'Cadeau anniversaire offert',
-    'Remise 5% sur les nouveautés',
-    'Hotline dédiée Gold',
+    'All Silver privileges included',
+    'Reward Points ×2 on all stays',
+    'Guaranteed room upgrade',
+    'Complimentary Breakfast for two',
+    'Spa Credit — 500 MAD per stay',
+    'Anniversary night complimentary',
+    'Priority Gold concierge line',
   ],
   PLATINUM: [
-    'Tous les avantages Gold',
-    'Points bonus x3 sur tous les achats',
-    'Livraison gratuite sans minimum',
-    'Accès anticipé aux nouvelles collections',
-    'Concierge personnel dédié',
-    'Remise 10% permanente',
-    'Invitations événements exclusifs',
-    'Retours gratuits illimités',
-    'Programme parrain premium',
+    'All Gold privileges included',
+    'Reward Points ×3 on all stays',
+    'VIP Lounge access — all properties',
+    'Dedicated Butler Service',
+    'Complimentary Airport Transfer',
+    'Suite Night Award — 4× per year',
+    'Exclusive member rate on all bookings',
+    'Complimentary Spa treatment',
+    'Personal travel curator',
   ],
 };
 
-// Configuration visuelle par niveau
-const TIER_CONFIG = {
-  SILVER: {
-    gradient: 'from-slate-600 to-slate-700',
-    border: 'border-slate-500/30',
-    icon: '◈',
-    iconBg: 'bg-slate-500/20',
-    iconColor: 'text-slate-300',
-    checkColor: 'text-slate-400',
-    highlight: false,
-    label: 'Silver',
-    points: 'jusqu\'à 999 pts',
-    price: 'Gratuit',
-  },
-  GOLD: {
-    gradient: 'from-amber-500 to-amber-600',
-    border: 'border-amber-500/40',
-    icon: '◆',
-    iconBg: 'bg-amber-500/20',
-    iconColor: 'text-amber-300',
-    checkColor: 'text-amber-400',
-    highlight: true,
-    label: 'Gold',
-    points: '1 000 – 4 999 pts',
-    price: 'Populaire',
-  },
-  PLATINUM: {
-    gradient: 'from-violet-600 to-violet-700',
-    border: 'border-violet-500/40',
-    icon: '★',
-    iconBg: 'bg-violet-500/20',
-    iconColor: 'text-violet-300',
-    checkColor: 'text-violet-400',
-    highlight: false,
-    label: 'Platinum',
-    points: '5 000 pts et plus',
-    price: 'Premium',
-  },
+const TIERS = {
+  SILVER:   { icon: '◈', label: 'Silver',   points: 'Up to 999 pts',     color: C.silver,   glow:'rgba(142,155,170,0.15)', highlight: false },
+  GOLD:     { icon: '◆', label: 'Gold',     points: '1,000 – 4,999 pts', color: C.gold,     glow: C.goldGlow, highlight: true  },
+  PLATINUM: { icon: '★', label: 'Platinum', points: '5,000+ pts',        color: C.platinum, glow:'rgba(159,148,216,0.15)', highlight: false },
 };
 
-// Carte d'avantages pour un niveau
-function BenefitCard({ tier, benefits, loading }) {
-  const config = TIER_CONFIG[tier];
+/* ─── Styles ─────────────────────────────────────────────────── */
+const STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Jost:wght@200;300;400;500&display=swap');
 
+  .ezb * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── keyframes ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(26px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-16px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes lineDraw {
+    from { transform: scaleX(0); opacity: 0; }
+    to   { transform: scaleX(1); opacity: 1; }
+  }
+  @keyframes shimmerLoad {
+    0%,100% { opacity:.08; } 50% { opacity:.22; }
+  }
+  @keyframes orbFloat {
+    0%,100% { transform: scale(1) translateY(0); opacity: .35; }
+    50%      { transform: scale(1.1) translateY(-8px); opacity: .55; }
+  }
+
+  /* ── Animation classes ── */
+  .ezb-fu1 { animation: fadeUp .75s cubic-bezier(.22,1,.36,1) .06s both; }
+  .ezb-fu2 { animation: fadeUp .75s cubic-bezier(.22,1,.36,1) .13s both; }
+  .ezb-fu3 { animation: fadeUp .75s cubic-bezier(.22,1,.36,1) .20s both; }
+  .ezb-si0 { animation: slideIn .48s cubic-bezier(.22,1,.36,1) .00s both; }
+  .ezb-si1 { animation: slideIn .48s cubic-bezier(.22,1,.36,1) .07s both; }
+  .ezb-si2 { animation: slideIn .48s cubic-bezier(.22,1,.36,1) .14s both; }
+  .ezb-shimmer { animation: shimmerLoad 2s ease infinite; }
+
+  /* ── Benefit Card ── */
+  .ezb-card {
+    background: #1F1209;
+    border: 1px solid rgba(196,154,42,0.16);
+    border-radius: 2px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    cursor: default;
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .ezb-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(196,154,46,0.45), transparent);
+  }
+  .ezb-card:hover {
+    transform: translateY(-5px);
+    background: #251608;
+    border-color: rgba(196,154,46,0.36);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(196,154,46,0.12);
+  }
+
+  .ezb-card-header {
+    background: rgba(196,154,46,0.06);
+    border-bottom: 1px solid rgba(196,154,46,0.15);
+    padding: 1.75rem 1.5rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ezb-card-icon {
+    font-size: 26px;
+    margin-bottom: 8px;
+    line-height: 1;
+  }
+
+  .ezb-card-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 24px;
+    font-weight: 400;
+    color: #F0E6D0;
+    margin-bottom: 4px;
+  }
+
+  .ezb-card-points {
+    font-family: 'Jost', sans-serif;
+    font-size: 9px;
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .ezb-card-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 2px;
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .ezb-card-highlight {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 3px 10px;
+    border-radius: 2px;
+    font-family: 'Jost', sans-serif;
+    font-size: 9px;
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .ezb-card-content {
+    flex: 1;
+    padding: 1.5rem;
+  }
+
+  .ezb-benefits-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .ezb-benefit-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .ezb-benefit-icon {
+    font-size: 12px;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .ezb-benefit-text {
+    font-family: 'Jost', sans-serif;
+    font-size: 13px;
+    font-weight: 300;
+    line-height: 1.5;
+    color: #B09070;
+  }
+
+  .ezb-card-footer {
+    border-top: 1px solid rgba(196,154,46,0.12);
+    padding: 1.25rem 1.5rem;
+  }
+
+  .ezb-card-footer-btn {
+    text-align: center;
+    padding: 8px;
+    border-radius: 2px;
+    border: 1px solid rgba(196,154,42,0.30);
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: default;
+  }
+
+  /* ── Table ── */
+  .ezb-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .ezb-table thead tr {
+    background: rgba(10,6,4,0.4);
+    border-bottom: 1px solid rgba(196,154,46,0.2);
+  }
+
+  .ezb-table thead th {
+    padding: 14px 24px;
+    text-align: left;
+    font-family: 'Jost', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(176,144,112,0.65);
+  }
+
+  .ezb-table thead th:not(:first-child) {
+    text-align: center;
+  }
+
+  .ezb-table tbody tr {
+    border-bottom: 1px solid rgba(196,154,42,0.08);
+    transition: background 0.18s ease;
+  }
+
+  .ezb-table tbody tr:hover {
+    background: rgba(196,154,46,0.04);
+  }
+
+  .ezb-table tbody td {
+    padding: 13px 24px;
+    font-family: 'Jost', sans-serif;
+    font-size: 13px;
+    font-weight: 300;
+    color: #B09070;
+  }
+
+  .ezb-table tbody td:not(:first-child) {
+    text-align: center;
+  }
+
+  .ezb-shimmer-row {
+    height: 16px;
+    background: rgba(196,154,46,0.07);
+    border-radius: 2px;
+  }
+
+  @media (max-width: 900px) {
+    .ezb-grid { grid-template-columns: 1fr !important; }
+  }
+`;
+
+/* ─── Typography ─────────────────────────────────────────────── */
+const serif  = (sz, wt=400, col=C.textPrim, x={}) => ({ fontFamily:"'Cormorant Garamond',Georgia,serif", fontSize:sz, fontWeight:wt, color:col, ...x });
+const jost   = (sz, wt=300, col=C.textSec,  x={}) => ({ fontFamily:"'Jost',sans-serif", fontSize:sz, fontWeight:wt, letterSpacing:'0.2em', textTransform:'uppercase', color:col, ...x });
+
+/* ─── Atoms ──────────────────────────────────────────────────── */
+function Label({ children, color=C.textSec, style={} }) {
+  return <p style={{ ...jost(9, 300, color), margin:0, ...style }}>{children}</p>;
+}
+
+function GoldDivider({ label }) {
   return (
-    <div className={`relative flex flex-col rounded-2xl border overflow-hidden transition-all ${config.border} ${config.highlight ? 'ring-2 ring-amber-500/40 shadow-2xl shadow-amber-500/10 scale-[1.02]' : ''}`}>
-      {/* Badge populaire */}
-      {config.highlight && (
-        <div className="absolute top-4 right-4 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">
-          ⭐ Populaire
+    <div style={{ display:'flex', alignItems:'center', gap:16, margin:'3.2rem 0 2rem' }}>
+      <div style={{ flex:1, height:'0.5px', background:`linear-gradient(to right, transparent, rgba(196,154,46,0.4))`, animation:'lineDraw .9s ease both' }} />
+      <span style={{ color:C.gold, fontSize:9, opacity:.6 }}>✦</span>
+      {label && <Label color={C.gold} style={{ letterSpacing:'0.32em' }}>{label}</Label>}
+      <span style={{ color:C.gold, fontSize:9, opacity:.6 }}>✦</span>
+      <div style={{ flex:1, height:'0.5px', background:`linear-gradient(to left, transparent, rgba(196,154,46,0.4))`, animation:'lineDraw .9s ease both' }} />
+    </div>
+  );
+}
+
+function BenefitCard({ tier, benefits, loading }) {
+  const cfg = TIERS[tier];
+  return (
+    <div className="ezb-card" style={{ borderTop: `2.5px solid ${cfg.color}` }}>
+      {cfg.highlight && (
+        <div className="ezb-card-highlight" style={{ background: `${cfg.color}15`, border: `1px solid ${cfg.color}40`, color: cfg.color }}>
+          ◆ Most Popular
         </div>
       )}
 
-      {/* En-tête coloré */}
-      <div className={`bg-gradient-to-br ${config.gradient} p-6`}>
-        <div className={`w-12 h-12 rounded-xl ${config.iconBg} flex items-center justify-center text-2xl mb-4`}>
-          <span className={config.iconColor}>{config.icon}</span>
-        </div>
-        <h2 className="text-white text-2xl font-bold">{config.label}</h2>
-        <p className="text-white/60 text-sm mt-1">{config.points}</p>
-        <div className="mt-4 inline-block bg-white/10 backdrop-blur-sm rounded-lg px-3 py-1.5">
-          <span className="text-white text-sm font-medium">{config.price}</span>
-        </div>
+      {/* Glow orb */}
+      <div style={{ 
+        position:'absolute', 
+        top:-55, 
+        right:-55, 
+        width:170, 
+        height:170, 
+        borderRadius:'50%', 
+        background:`radial-gradient(circle,${cfg.glow} 0%,transparent 70%)`, 
+        animation:`orbFloat 7s ease infinite`,
+        pointerEvents:'none' 
+      }} />
+
+      {/* Header */}
+      <div className="ezb-card-header">
+        <p className="ezb-card-icon" style={{ color: cfg.color }}>{cfg.icon}</p>
+        <h2 className="ezb-card-title">{cfg.label}</h2>
+        <p className="ezb-card-points" style={{ color: cfg.color }}>{cfg.points}</p>
+        <span className="ezb-card-badge" style={{ background: `${cfg.color}12`, border: `1px solid ${cfg.color}30`, color: cfg.color }}>
+          {cfg.label} Membership
+        </span>
       </div>
 
-      {/* Liste des avantages */}
-      <div className="flex-1 bg-slate-900 p-6">
+      {/* Content */}
+      <div className="ezb-card-content">
         {loading ? (
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-5 bg-slate-800 rounded animate-pulse" style={{ width: `${70 + i * 5}%` }} />
+              <div key={i} className="ezb-shimmer-row" />
             ))}
           </div>
         ) : (
-          <ul className="space-y-3">
+          <ul className="ezb-benefits-list">
             {benefits.map((benefit, i) => {
               const text = typeof benefit === 'string' ? benefit : benefit.description || benefit.title || JSON.stringify(benefit);
-              const isInherited = text.startsWith('Tous les avantages');
+              const isInherited = text.toLowerCase().startsWith('all ');
               return (
-                <li key={i} className="flex items-start gap-3">
-                  <span className={`mt-0.5 flex-shrink-0 text-sm font-bold ${config.checkColor}`}>
+                <li key={i} className="ezb-benefit-item">
+                  <span className="ezb-benefit-icon" style={{ color: isInherited ? C.textDim : cfg.color }}>
                     {isInherited ? '↑' : '✓'}
                   </span>
-                  <span className={`text-sm leading-relaxed ${isInherited ? 'text-slate-500 italic' : 'text-slate-300'}`}>
+                  <span className="ezb-benefit-text" style={{ color: isInherited ? C.textDim : C.textSec, fontStyle: isInherited ? 'italic' : 'normal' }}>
                     {text}
                   </span>
                 </li>
@@ -126,126 +376,110 @@ function BenefitCard({ tier, benefits, loading }) {
         )}
       </div>
 
-      {/* Pied de carte */}
-      <div className="bg-slate-900 border-t border-slate-800 p-5">
-        <div className={`w-full py-3 rounded-xl text-center text-sm font-semibold bg-gradient-to-r ${config.gradient} text-white shadow-lg`}>
-          Niveau {config.label}
+      {/* Footer */}
+      <div className="ezb-card-footer">
+        <div className="ezb-card-footer-btn" style={{ color: cfg.color, border: `1px solid ${cfg.color}35` }}>
+          {cfg.icon} {cfg.label} Membership
         </div>
       </div>
     </div>
   );
 }
 
+/* ─── Benefits Page ─────────────────────────────────────────────── */
 export default function Benefits() {
-  const [benefits, setBenefits] = useState({
-    SILVER: DEFAULT_BENEFITS.SILVER,
-    GOLD: DEFAULT_BENEFITS.GOLD,
-    PLATINUM: DEFAULT_BENEFITS.PLATINUM,
-  });
+  const [benefits, setBenefits] = useState(DEFAULT_BENEFITS);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadBenefits() {
+    async function load() {
       setLoading(true);
       try {
-        // Charger les avantages des 3 niveaux en parallèle
-        const [silverRes, goldRes, platRes] = await Promise.allSettled([
+        const [s, go, p] = await Promise.allSettled([
           benefitsAPI.getByCardType('SILVER'),
           benefitsAPI.getByCardType('GOLD'),
           benefitsAPI.getByCardType('PLATINUM'),
         ]);
-
         setBenefits({
-          SILVER: silverRes.status === 'fulfilled' && silverRes.value.data?.length
-            ? silverRes.value.data
-            : DEFAULT_BENEFITS.SILVER,
-          GOLD: goldRes.status === 'fulfilled' && goldRes.value.data?.length
-            ? goldRes.value.data
-            : DEFAULT_BENEFITS.GOLD,
-          PLATINUM: platRes.status === 'fulfilled' && platRes.value.data?.length
-            ? platRes.value.data
-            : DEFAULT_BENEFITS.PLATINUM,
+          SILVER:   s.status === 'fulfilled' && s.value.data?.length ? s.value.data : DEFAULT_BENEFITS.SILVER,
+          GOLD:     go.status === 'fulfilled' && go.value.data?.length ? go.value.data : DEFAULT_BENEFITS.GOLD,
+          PLATINUM: p.status === 'fulfilled' && p.value.data?.length ? p.value.data : DEFAULT_BENEFITS.PLATINUM,
         });
-      } catch {
-        // Utiliser les données par défaut
+      } catch (e) {
+        console.warn('Utilisation des avantages par défaut:', e);
       } finally {
         setLoading(false);
       }
     }
-    loadBenefits();
+    load();
   }, []);
 
+  const compareRows = [
+    { label: 'Points multiplier',   values: ['×1', '×2', '×3'] },
+    { label: 'Breakfast included',  values: ['—', '✓ For two', '✓ Gourmet'] },
+    { label: 'Spa access',          values: ['—', '500 MAD credit', 'Full access'] },
+    { label: 'Room upgrade',        values: ['On availability', 'Guaranteed', 'Suite award'] },
+    { label: 'Concierge service',   values: ['Standard', 'Priority Gold', 'Personal butler'] },
+    { label: 'Airport transfer',    values: ['—', '—', '✓ Complimentary'] },
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-950">
-      {/* En-tête */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950 border-b border-slate-800">
-        <div
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: 'radial-gradient(ellipse at 50% 0%, #1e40af55 0%, transparent 70%)',
-          }}
-        />
-        <div className="relative max-w-7xl mx-auto px-6 py-12 text-center">
-          <h1 className="text-white text-3xl font-bold mb-2">Avantages par Niveau</h1>
-          <p className="text-slate-400 max-w-xl mx-auto">
-            Découvrez les avantages exclusifs de chaque niveau de fidélité et les récompenses qui vous attendent.
+    <div className="ezb" style={{ minHeight:'100vh', background:C.bg, color:C.textPrim }}>
+      <style>{STYLES}</style>
+
+      {/* ══ MAIN ══ */}
+      <main style={{ maxWidth:1240, margin:'0 auto', padding:'3.5rem 2.5rem 5rem' }}>
+
+        {/* ── Header ── */}
+        <div className="ezb-fu1" style={{ textAlign:'center', marginBottom:'2.5rem' }}>
+          <Label color={C.gold} style={{ marginBottom:12 }}>LuxStay Rewards Programme</Label>
+          <h1 style={{ ...serif(48, 400, '#FFFFFF'), marginBottom:16 }}>
+            Exclusive <span style={{ fontStyle:'italic', fontWeight:300 }}>Member Benefits</span>
+          </h1>
+          <p style={{ ...jost(11, 200, 'rgba(240,225,200,0.58)'), maxWidth:600, margin:'0 auto', lineHeight:1.6 }}>
+            Discover the privileges reserved for each membership tier — curated experiences, dedicated concierge, and exclusive rates
           </p>
         </div>
-      </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        {/* Grille comparaison */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-          {['SILVER', 'GOLD', 'PLATINUM'].map((tier) => (
-            <BenefitCard
-              key={tier}
-              tier={tier}
-              benefits={benefits[tier]}
-              loading={loading}
-            />
+        <GoldDivider label="Membership Tiers" />
+
+        {/* ── Cards Grid ── */}
+        <div className="ezb-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:20, alignItems:'start', marginBottom:'3.2rem' }}>
+          {['SILVER', 'GOLD', 'PLATINUM'].map((tier, i) => (
+            <div key={tier} className={`ezb-fu${i+1}`}>
+              <BenefitCard tier={tier} benefits={benefits[tier]} loading={loading} />
+            </div>
           ))}
         </div>
 
-        {/* Tableau comparatif des caractéristiques clés */}
-        <div className="mt-16 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-          <div className="px-6 py-5 border-b border-slate-800">
-            <h2 className="text-white font-semibold text-lg">Comparaison rapide</h2>
+        <GoldDivider label="Quick Comparison" />
+
+        {/* ── Comparison Table ── */}
+        <div style={{ background:C.bgPanel, border:`1px solid ${C.border}`, borderRadius:2, overflow:'hidden' }}>
+          <div style={{ padding:'1.25rem 1.75rem', borderBottom:`1px solid ${C.border}` }}>
+            <Label color={C.gold} style={{ marginBottom:0 }}>Feature Comparison</Label>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div style={{ overflowX:'auto' }}>
+            <table className="ezb-table">
               <thead>
-                <tr className="border-b border-slate-800">
-                  <th className="text-left px-6 py-4 text-slate-500 text-sm font-medium w-1/3">Fonctionnalité</th>
-                  {['SILVER', 'GOLD', 'PLATINUM'].map((t) => (
-                    <th key={t} className="px-6 py-4 text-center">
-                      <span className={`text-sm font-bold ${t === 'SILVER' ? 'text-slate-300' : t === 'GOLD' ? 'text-amber-400' : 'text-violet-400'}`}>
-                        {TIER_CONFIG[t].icon} {TIER_CONFIG[t].label}
+                <tr>
+                  <th>Benefit</th>
+                  {['SILVER', 'GOLD', 'PLATINUM'].map((tier) => (
+                    <th key={tier}>
+                      <span style={{ ...serif(14, 400, TIERS[tier].color) }}>
+                        {TIERS[tier].icon} {TIERS[tier].label}
                       </span>
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {[
-                  { label: 'Multiplicateur de points', values: ['×1', '×2', '×3'] },
-                  { label: 'Livraison gratuite', values: ['—', 'Dès 50 MAD', 'Illimitée'] },
-                  { label: 'Remise permanente', values: ['—', '—', '10%'] },
-                  { label: 'Accès ventes privées', values: ['✕', '✓', '✓'] },
-                  { label: 'Support prioritaire', values: ['Standard', 'Gold', 'Concierge'] },
-                  { label: 'Cadeau anniversaire', values: ['✕', '✓', '✓ Premium'] },
-                ].map((row) => (
-                  <tr key={row.label} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="px-6 py-4 text-slate-400 text-sm">{row.label}</td>
+              <tbody>
+                {compareRows.map((row, idx) => (
+                  <tr key={idx}>
+                    <td>{row.label}</td>
                     {row.values.map((v, i) => (
-                      <td key={i} className="px-6 py-4 text-center">
-                        <span className={`text-sm font-medium ${
-                          v === '✕' || v === '—' ? 'text-slate-600'
-                          : i === 2 ? 'text-violet-400'
-                          : i === 1 ? 'text-amber-400'
-                          : 'text-slate-300'
-                        }`}>
-                          {v}
-                        </span>
+                      <td key={i} style={{ color: (v === '—') ? C.textDim : [C.silver, C.gold, C.platinum][i] }}>
+                        {v}
                       </td>
                     ))}
                   </tr>
@@ -254,7 +488,19 @@ export default function Benefits() {
             </table>
           </div>
         </div>
-      </div>
+
+        {/* ── Footer ── */}
+        <div style={{ display:'flex', alignItems:'center', gap:14, marginTop:'4rem', paddingTop:'2rem', borderTop:`1px solid ${C.border}` }}>
+          <div style={{ flex:1, height:'0.5px', background:`linear-gradient(to right,transparent,${C.border})` }} />
+          <span style={{ color:C.gold, fontSize:11, opacity:.4 }}>✦</span>
+          <Label color={C.textDim} style={{ letterSpacing:'0.28em' }}>L&apos;Éclat d&apos;Azur · Exclusive Collection</Label>
+          <span style={{ color:C.gold, fontSize:11, opacity:.4 }}>✦</span>
+          <div style={{ flex:1, height:'0.5px', background:`linear-gradient(to left,transparent,${C.border})` }} />
+        </div>
+
+      </main>
     </div>
   );
 }
+
+

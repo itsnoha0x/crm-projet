@@ -1,14 +1,20 @@
 import axios from 'axios';
+import keycloak from '../keycloak';
 
 const BASE_URL = '';
 
 const api = axios.create({ baseURL: BASE_URL });
 
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('kc_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  async (config) => {
+    if (keycloak.token) {
+      try {
+        await keycloak.updateToken(60); // Refresh token if it expires in under 60 seconds
+        localStorage.setItem('kc_token', keycloak.token);
+      } catch (err) {
+        console.error('Token refresh failed:', err);
+      }
+      config.headers.Authorization = `Bearer ${keycloak.token}`;
     }
     return config;
   },
