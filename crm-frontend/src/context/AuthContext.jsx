@@ -49,6 +49,11 @@ export function AuthProvider({ children }) {
       });
   }, []);
 
+  const hasRole = (roles) => {
+    if (!user?.roles) return false;
+    return roles.some(role => user.roles.includes(role));
+  };
+
   const logout = () => {
     localStorage.removeItem('kc_token');
     initialized = false;
@@ -72,7 +77,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ authenticated, user, logout, keycloak }}>
+    <AuthContext.Provider value={{ authenticated, user, logout, keycloak, hasRole }}>
       {children}
     </AuthContext.Provider>
   );

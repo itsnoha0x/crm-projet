@@ -23,7 +23,7 @@ public class CustomerController {
     private final CustomerService customerService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     public ResponseEntity<CustomerResponse> create(
             @Valid @RequestBody CustomerRequest request) {
         CustomerResponse response = customerService.create(request);
@@ -31,20 +31,20 @@ public class CustomerController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER') or hasRole('STAFF')")
     public ResponseEntity<CustomerResponse> getById(@PathVariable String id) {
         return ResponseEntity.ok(customerService.findById(id));
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     public ResponseEntity<Page<CustomerResponse>> getAll(
             @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(customerService.findAll(pageable));
     }
 
     @GetMapping("/search")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER') or hasRole('STAFF')")
     public ResponseEntity<Page<CustomerResponse>> search(
             @RequestParam String q,
             @PageableDefault(size = 10) Pageable pageable) {
@@ -52,7 +52,7 @@ public class CustomerController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     public ResponseEntity<CustomerResponse> update(
             @PathVariable String id,
             @Valid @RequestBody CustomerRequest request) {

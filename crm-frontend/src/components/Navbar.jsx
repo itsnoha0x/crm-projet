@@ -168,9 +168,21 @@ const STYLES = `
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, logout } = useAuth() ?? {};
+  const { user, logout, hasRole } = useAuth() ?? {};
   const username = user?.username;
   const location = useLocation();
+
+  // Filter nav items based on role
+  const filteredNavItems = NAV_ITEMS.filter(item => {
+    // Only ADMIN/STAFF can access Customers, Loyalty, Points, Benefits
+    if (['/customers', '/loyalty', '/points', '/benefits'].includes(item.path)) {
+      return hasRole(['ADMIN', 'STAFF']);
+    }
+    return true;
+  });
+
+  // Get user role for display
+  const userRole = hasRole(['ADMIN']) ? 'Administrateur' : hasRole(['STAFF']) ? 'Concierge' : 'Client';
 
   /* Close mobile menu on route change */
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
@@ -219,7 +231,7 @@ export default function Navbar() {
 
         {/* Desktop nav links */}
         <div className="lux-desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
-          {NAV_ITEMS.map(item => (
+          {filteredNavItems.map(item => (
             <NavLink
               key={item.path}
               to={item.path}
@@ -252,7 +264,7 @@ export default function Navbar() {
                   {username}
                 </div>
                 <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 8, fontWeight: 300, letterSpacing: '0.22em', textTransform: 'uppercase', color: C.textMut }}>
-                  Concierge
+                  {userRole}
                 </div>
               </div>
               <div style={{ width: 1, height: 24, background: C.border }} />
@@ -280,11 +292,11 @@ export default function Navbar() {
         }}>
           {username && (
             <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 15, color: C.textPrim, margin: '4px 0 10px 14px' }}>
-              {username} <span style={{ fontFamily: "'Jost',sans-serif", fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textMut, marginLeft: 6 }}>Concierge</span>
+              {username} <span style={{ fontFamily: "'Jost',sans-serif", fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textMut, marginLeft: 6 }}>{userRole}</span>
             </p>
           )}
 
-          {NAV_ITEMS.map(item => (
+          {filteredNavItems.map(item => (
             <NavLink
               key={item.path}
               to={item.path}

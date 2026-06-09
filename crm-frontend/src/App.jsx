@@ -10,6 +10,7 @@ import Points from './pages/Points';
 import Benefits from './pages/Benefits';
 import CustomerDashboard from './pages/CustomerDashboard';
 import { useToast } from './hooks/useToast';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 export default function App() {
   const { toasts, addToast, removeToast } = useToast();
@@ -21,10 +22,26 @@ export default function App() {
         <main>
           <Routes>
             <Route path="/" element={<Dashboard addToast={addToast} />} />
-            <Route path="/customers" element={<Customers addToast={addToast} />} />
-            <Route path="/loyalty" element={<LoyaltyCards addToast={addToast} />} />
-            <Route path="/points" element={<Points addToast={addToast} />} />
-            <Route path="/benefits" element={<Benefits addToast={addToast} />} />
+            <Route path="/customers" element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}>
+                <Customers addToast={addToast} />
+              </ProtectedRoute>
+            } />
+            <Route path="/loyalty" element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}>
+                <LoyaltyCards addToast={addToast} />
+              </ProtectedRoute>
+            } />
+            <Route path="/points" element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}>
+                <Points addToast={addToast} />
+              </ProtectedRoute>
+            } />
+            <Route path="/benefits" element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}>
+                <Benefits addToast={addToast} />
+              </ProtectedRoute>
+            } />
             <Route path="/dashboard/:customerId" element={<CustomerDashboard addToast={addToast} />} />
             <Route path="*" element={<Dashboard addToast={addToast} />} />
           </Routes>
